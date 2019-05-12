@@ -3,25 +3,28 @@ from config import DEPLOY_CONFIG
 
 
 def deploy(repo_name):
-    if not hasattr(DEPLOY_CONFIG, repo_name):
-        raise AttributeError('No such repo in your config')
+    if not repo_name in DEPLOY_CONFIG:
+        raise AttributeError('No repo \'{}\' in your config'.format(repo_name))
 
-    config = DEPLOY_CONFIG[repo_name]
+    config = DEPLOY_CONFIG.get(repo_name)
 
     for field in ['order', 'path']:
-        if not hasattr(config, field):
-            raise AttributeError('No {} attribute in config'.format(field))
+        if not field in config:
+            raise AttributeError('No {} field in config'.format(field))
 
-    for step in config.order:
-        commandsList = (
+    for step in config['order']:
+        stepCommands = config.get(step)
+        commands_list = (
             # if it is one command in step,
-            # make it a list for convinient iteration
-            [config[step]], config[step]
-        )[isinstance(config[step], list)]
+            # convert it into a list for easy iteration
+            [stepCommands], stepCommands
+        )[isinstance(stepCommands, list)]
 
-        for command in commandsList:
-            completedProcess = subprocess.run(command, cwd=config.path)
-            print(completedProcess)
+        for command in commands_list:
+            if not command:
+                raise KeyError('No command \'{}\' in your config'.format(command))
+            completed_process = subprocess.run(command, cwd=config.get('path'), shell=True)
+            print(completed_process)
 
 
         # print(action)
