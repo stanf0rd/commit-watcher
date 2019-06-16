@@ -36,6 +36,10 @@ def common(app_id):
     Sends payload to modules
     """
     if app_id in WATCHER_CONFIG.get('repos'):
+        if 'X-Hub-Signature' not in request.headers:
+            LOGGER.warning("Request with no signature: /%s", app_id)
+            return jsonify({"msg": "No signature."}), 403
+
         counted_signature = create_signature(
             WATCHER_CONFIG.get('repos').get(app_id).get('secret'),
             request.data
@@ -45,6 +49,7 @@ def common(app_id):
             request.headers.get('X-Hub-Signature'),
         )
         if not signature_is_valid:
+            LOGGER.warning("Request with invalid signature: /%s", app_id)
             return jsonify({"msg": "Invalid signature."}), 403
 
         return '', 200
@@ -61,9 +66,9 @@ def create_signature(secret, payload):
     return signature
 
 
-def check_signature(counted, recieved):
+def check_signature(first, second):
     """ Safely compares two signatures """
     return hmac.compare_digest(
-        str(counted),
-        str(recieved),
+        str(first),
+        str(second),
     )
